@@ -33,6 +33,13 @@ public class UnitsGenerator: MonoBehaviour
 
   void Start()
   {
+    if (GetComponents<UnitsGenerator>().Length>1)
+    {
+      Debug.LogError("Too many UnitsGenerator components in : " + gameObject.name + "! Can be only one!");
+      Destroy(this);
+      return;
+    }
+
     if (!team)
     {
       Debug.LogError("Team not set. Object name : " + gameObject.name + "! Component was removed!");
@@ -82,32 +89,20 @@ public class UnitsGenerator: MonoBehaviour
     _numEmited++;
   }
 
-  public void SaveStaticObject(ref Dictionary<string, object> dictionary)
+  public void SaveStaticObject(SerializedStaticObject.SendMessageStruct param)
   {
     var id = GetComponent<UniqueId>().ID;
-    try
-    {
-      dictionary.Add(className + "[" + id + "]._numEmited", _numEmited);
-    }
-    catch (Exception e){
-      Debug.LogException(e);
-    }
+    param.SetComponentResult(className, DictionaryTools<string, object>.TryToAdd(ref param.dictionary, className + "[" + id + "]._numEmited", _numEmited, true));
   }
 
-  public void LoadStaticObject(ref Dictionary<string, object> dictionary)
+  public void LoadStaticObject(SerializedStaticObject.SendMessageStruct param)
   {
+    var isSuccess = false;
     var id = GetComponent<UniqueId>().ID;
-    try
-    {
-      if (dictionary.ContainsKey(className + "[" + id + "]._numEmited"))
-        _numEmited = (int)dictionary[className + "[" + id + "]._numEmited"];
-      else
-        Clear();
-    }
-    catch (Exception e)
-    {
-      Debug.LogException(e);
-    }
+    _numEmited = (int)DictionaryTools<string, object>.TryToGet(ref param.dictionary, className + "[" + id + "]._numEmited", _numEmited, out isSuccess, false);
+    if (!isSuccess)
+      Clear();
+    param.SetComponentResult(className, true);
   }
 
   [ExecuteInEditMode]
@@ -127,5 +122,4 @@ public class UnitsGenerator: MonoBehaviour
     UnityEditor.Handles.color = Color.green;
     UnityEditor.Handles.Label(transform.position + Vector3.up * (transform.localScale.y + 0.5f), name);
   }
-
 }
